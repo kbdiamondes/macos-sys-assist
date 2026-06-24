@@ -71,3 +71,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restricted path access for file operations
 - File size limits (1MB max) for read operations
 - Permission checking for screenshot operations
+
+---
+
+## [2.0.0] - 2026-06-24
+
+### Removed
+
+- **Removed redundant tools** (use bash instead):
+  - Removed `tools/clipboard.py` — use `pbpaste`/`pbcopy`
+  - Removed `tools/filesystem.py` — use `find`/`ls`/`cat`/`open`
+  - Removed `get_active_app()` — use `osascript`
+  - Removed `list_open_apps()` — use `osascript`
+  - Removed `get_screen_resolution()` — use `system_profiler`
+
+### Changed
+
+- Scoped MCP to its core value: **Core Graphics input**, **window management**, and **window-specific screenshots**
+- Updated README to clearly document when to use MCP vs bash vs Chrome DevTools
+- Updated Project Structure to reflect trimmed codebase
+
+### Why
+
+bash + Chrome DevTools already handles file operations, clipboard, app queries, and web interaction. This MCP is now focused only on what it does **better** than those tools — reliable input simulation, precise window geometry, and clean window screenshots.

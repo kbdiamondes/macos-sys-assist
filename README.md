@@ -1,6 +1,6 @@
 # macos-sys-assist
 
-A secure, constraint-based macOS OS-level automation MCP server for AI assistants.
+A focused macOS automation MCP server for **reliable input simulation**, **window management**, and **window-specific screenshots** — the three things AppleScript and bash do poorly.
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -10,19 +10,27 @@ A secure, constraint-based macOS OS-level automation MCP server for AI assistant
 
 ## What Is This?
 
-**macos-sys-assist** is a Python-based MCP (Model Context Protocol) server that enables AI assistants to safely interact with macOS at the system level. It uses **native macOS Accessibility APIs** via `pyobjc`, eliminating the risks associated with shell execution.
+**macos-sys-assist** is a Python-based MCP server that fills the gaps where **bash + Chrome DevTools** fall short. It uses `pyobjc` (native macOS APIs) and **Core Graphics** for low-level input simulation — more reliable than AppleScript's `keystroke`.
 
-### Key Features
+### What It Does That bash/CDP Can't
 
-- **No Shell Execution** — All operations use native macOS APIs, never `os.system()` or `subprocess`
-- **Application Allow-List** — Only pre-approved apps can be interacted with
-- **Multi-Step Task Engine** — Parse complex prompts into executable chains of actions
-- **File System** — Find, read, and open files safely
-- **Screenshots** — Capture full screen, windows, or regions
-- **Clipboard** — Read and write clipboard contents
-- **App Lifecycle** — Launch, quit, and focus applications
-- **Window Management** — Move, resize, snap to halves/quarters
-- **Input Simulation** — Click, type, press key combinations
+| Capability | Why Not bash/CDP |
+|---|---|
+| **Core Graphics click/type/key** | AppleScript `keystroke` misses keys or fails silently. This uses `CGEventPost` — the same API macOS uses internally. |
+| **Window-specific screenshots** | bash `screencapture` captures the full screen; cropping is tedious. This captures just the window you want. |
+| **Precise window geometry** | `osascript` returns position inconsistently. This uses the Accessibility API for accurate pixel-level data. |
+| **Multi-app window layouts** | Arrange 3+ apps at specific positions in one command. bash needs multiple chained `osascript` calls. |
+
+### What It Does NOT Do (Use bash Instead)
+
+| Tool | Why Use bash |
+|---|---|
+| Finding files | `find` / `mdfind` are simpler |
+| Reading files | `cat` / `python3 -c` |
+| Opening files | `open` command |
+| App queries | `osascript -e 'tell app "System Events"...'` |
+| Clipboard | `pbpaste` / `pbcopy` |
+| Screen resolution | `system_profiler SPDisplaysDataType` |
 
 ---
 
@@ -75,45 +83,24 @@ Add to `opencode.jsonc`:
 .venv/bin/python3 -c "
 import sys
 sys.path.insert(0, '.')
-from macos.accessibility import AccessibilityWrapper
-a = AccessibilityWrapper()
-print(a.get_frontmost_app())
+from macos.input import InputSimulator
+InputSimulator().click_at(100, 200, 'left')
 "
 ```
 
 ---
 
-## Complete Tool Reference
+## Tool Reference
 
-### App Intelligence (Read-Only)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `get_active_app` | Get currently focused application | name, bundle_id, pid |
-| `list_open_apps` | List all running apps with windows | name, bundle_id, pid |
-| `get_app_info(name/bundle_id)` | Info about a specific app | name, bundle_id, pid, active |
-| `get_screen_resolution` | Get primary display resolution | width, height |
-| `get_displays` | Get all connected displays | list of displays |
-
-### File System (Read-Only)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `find_files(directory, pattern, recursive)` | Search files by name/pattern | file list with paths, sizes |
-| `read_file(filepath, max_lines)` | Read text file contents | content, lines, size |
-| `list_directory(directory)` | List directory contents | files, folders, counts |
-| `open_file(filepath)` | Open file in default app | status, filename |
-| `get_clipboard()` | Read clipboard text | content, length |
-| `clipboard_has_text()` | Check clipboard state | boolean, length |
-
-### Input Simulation
+### Input Simulation (Core Graphics)
 
 | Tool | Description | Security |
 |------|-------------|----------|
 | `click_at(x, y, button, double)` | Click at screen coordinates | ⚠️ Confirmation |
-| `type_string(text)` | Type text character by character | ⚠️ Confirmation |
-| `press_key(combination)` | Press key combo (e.g., `cmd+tab`) | ⚠️ Blocked combos |
-| `set_clipboard(text)` | Write text to clipboard | ⚠️ Confirmation |
+| `type_string(text)` | Type text character by character | ⚠️ Confirmation, max 500 chars |
+| `press_key(combination)` | Press key combo (e.g., `cmd+tab`) | ⚠️ Blocked combos enforced |
+
+More reliable than AppleScript — uses `CGEventPost` instead of `keystroke`.
 
 ### Window Management
 
@@ -121,75 +108,45 @@ print(a.get_frontmost_app())
 |------|-------------|----------|
 | `move_window(x, y)` | Move active window to coords | ⚠️ Confirmation |
 | `resize_window(width, height)` | Resize active window | ⚠️ Confirmation |
-| `get_window_geometry(pid)` | Get window position/size | Read-only |
+| `get_window_geometry(pid)` | Get window position/size (Accurate) | Read-only |
 
-### App Lifecycle
-
-| Tool | Description | Security |
-|------|-------------|----------|
-| `launch_app(name/bundle_id)` | Launch an application | ⚠️ Allow-list |
-| `quit_app(name/bundle_id, force)` | Quit an application | ⚠️ Allow-list |
-| `focus_app(name/bundle_id)` | Bring app to front | ⚠️ Allow-list |
+Uses Accessibility API for pixel-level accuracy. More reliable than `osascript`.
 
 ### Screenshots (Requires Screen Recording Permission)
 
 | Tool | Description |
 |------|-------------|
 | `screenshot(filepath, display_id)` | Capture full screen |
-| `screenshot_window(pid, filepath)` | Capture specific window |
-| `screenshot_region(x, y, w, h, filepath)` | Capture screen region |
+| `screenshot_window(pid, filepath)` | Capture **specific window only** — no cropping needed |
+| `screenshot_region(x, y, w, h, filepath)` | Capture a screen region |
+| `get_displays()` | Get all connected displays and resolutions |
 
 ---
 
-## Multi-Step Task Engine
+## When to Use This vs bash
 
-### How It Works
+### ✅ Use macos-sys-assist when:
 
-The task engine decomposes complex natural language prompts into executable steps. Each step's output can be chained into the next step's input.
+- AppleScript `keystroke` or `click` fails silently
+- You need a screenshot of **just one window** without browser chrome
+- You're arranging 3+ app windows at specific positions for a workspace
+- The task requires **pixel-level coordinate accuracy**
 
-### Supported Prompt Patterns
+### ❌ Use bash when:
 
-| Pattern | Example |
-|---------|---------|
-| `find X in Y and open it` | "Find readme.md in Downloads and open it" |
-| `open X in Y folder` | "Open data.csv in downloads folder" |
-| `find and open X` | "Find and open report.pdf" |
-| `open X` (filename) | "Open notes.txt" (auto-searches Downloads) |
-| `launch X` | "Launch Safari" |
-| `list X` | "List Downloads" |
-| `find X in Y` | "Find all .pdf files in Documents" |
-| `what app is focused` | "What app is currently focused?" |
+- Finding files (`find`, `mdfind`, `ls`)
+- Reading files (`cat`, `python3 -c`)
+- Opening files (`open`)
+- Basic clipboard (`pbpaste`, `pbcopy`)
+- Checking what app is frontmost (`osascript`)
+- Launching apps (`open -a`)
 
-### Example: Find and Open File
+### 🔄 Use Chrome DevTools when:
 
-```python
-from macos.task_engine import PromptParser, TaskEngine
-from macos.filesystem import FileSystemManager
-from macos.app_lifecycle import AppLifecycleManager
-from macos.window import WindowManager
-from macos.input import InputSimulator
-from macos.accessibility import AccessibilityWrapper
-
-# Parse the prompt
-steps = PromptParser.parse("Find readme.md in Downloads and open it")
-# Output:
-#   Step 1: find_files(directory="~/Downloads", pattern="readme.md")
-#   Step 2: open_file(filepath=<result_of_step_1>)
-
-# Execute
-engine = TaskEngine(
-    FileSystemManager(),
-    AppLifecycleManager(),
-    WindowManager(),
-    InputSimulator(),
-    AccessibilityWrapper()
-)
-result = engine.execute(steps)
-print(result.final_output)
-# Output:
-#   ✅ Find 'readme.md' in ~/Downloads: Found 1 items
-#   ✅ Open the found file
-```
+- Interacting with web pages (clicking buttons, filling forms)
+- Uploading files to websites (base64 injection into `<input type="file">`)
+- Reading page content
+- Navigating multi-page web flows
 
 ---
 
@@ -197,26 +154,20 @@ print(result.final_output)
 
 ### `allowed_apps.json`
 
-Controls which apps can be automated and what actions are allowed:
+Controls which apps can be automated:
 
 ```json
 {
   "allowed_apps": [
     {
-      "bundle_id": "com.apple.Safari",
-      "name": "Safari",
-      "allow_actions": true
-    },
-    {
-      "bundle_id": "com.microsoft.VSCode",
-      "name": "Visual Studio Code",
+      "bundle_id": "com.brave.Browser",
+      "name": "Brave Browser",
       "allow_actions": true
     }
   ],
   "global_settings": {
     "require_confirmation_for_click": true,
     "require_confirmation_for_type": true,
-    "require_confirmation_for_key": false,
     "max_string_length": 500,
     "blocked_key_combinations": [
       "cmd+q",
@@ -226,57 +177,6 @@ Controls which apps can be automated and what actions are allowed:
   }
 }
 ```
-
-### Finding Bundle IDs
-
-```bash
-osascript -e 'id of app "Safari"'
-# Output: com.apple.Safari
-```
-
-### Common Bundle IDs
-
-| App | Bundle ID |
-|-----|-----------|
-| Safari | `com.apple.Safari` |
-| Google Chrome | `com.google.Chrome` |
-| Brave Browser | `com.brave.Browser` |
-| Visual Studio Code | `com.microsoft.VSCode` |
-| Terminal | `com.apple.Terminal` |
-| Finder | `com.apple.finder` |
-
----
-
-## Security Model
-
-### Design Principles
-
-1. **Least Privilege** — Only minimum necessary capabilities exposed
-2. **No Shell Access** — All operations use native macOS APIs
-3. **Explicit Allow-List** — Only pre-approved apps can be controlled
-4. **Human-in-the-Loop** — Invasive actions require user confirmation
-5. **Input Validation** — Text length limits, key combo blocking
-
-### 6-Layer Security
-
-```
-1. Application Allow-List    → Only approved bundle IDs pass
-2. Action Permission Check   → Per-app allow_actions flag
-3. Input Validation          → Text length, key combo validation
-4. Blocked Operations        → Destructive shortcuts rejected
-5. Confirmation Prompts      → User approval for invasive actions
-6. Native API Only           → No shell, no AppleScript
-```
-
-### What's Blocked
-
-| Threat | Mitigation |
-|--------|------------|
-| Arbitrary command execution | No `subprocess` or shell access |
-| Unauthorized app control | Application allow-list |
-| Destructive key combos | Blocked combinations list |
-| Excessive text input | Maximum string length (500) |
-| Unconfirmed actions | Confirmation prompts |
 
 ---
 
@@ -292,20 +192,15 @@ macos-sys-assist/
 ├── setup.sh                  # Installation script
 ├── run.sh                    # Wrapper script
 ├── macos/                    # Native macOS API wrappers
-│   ├── accessibility.py     # App queries, screen info
-│   ├── window.py            # Window move/resize
-│   ├── input.py             # Mouse/keyboard simulation
-│   ├── filesystem.py        # File search, read, open
-│   ├── app_lifecycle.py     # Launch, quit, focus apps
-│   ├── screenshot.py        # Screen capture
-│   ├── clipboard.py         # Clipboard read/write
+│   ├── accessibility.py     # App queries, PID lookup
+│   ├── window.py            # Window move/resize/geometry
+│   ├── input.py             # Core Graphics click/type/key
+│   ├── screenshot.py        # Screen capture (full/window/region)
 │   └── task_engine.py       # Multi-step task execution
 └── tools/                    # MCP tool definitions
-    ├── information.py       # Read-only app/screen tools
-    ├── actions.py           # Input/window action tools
-    ├── filesystem.py        # File system tools
-    ├── screenshot.py        # Screenshot tools
-    └── clipboard.py         # Clipboard tools
+    ├── information.py       # get_window_geometry
+    ├── actions.py           # click_at, type_string, press_key, move/resize
+    └── screenshot.py        # screenshot, screenshot_window, screenshot_region, get_displays
 ```
 
 ---
@@ -313,20 +208,36 @@ macos-sys-assist/
 ## Roadmap
 
 ### Completed ✅
-- [x] Base MCP server with app intelligence and input simulation
-- [x] Window management (move, resize, snap)
-- [x] Application lifecycle (launch, quit, focus)
-- [x] File system operations (find, read, open, list)
-- [x] Screenshot capability (full screen, window, region)
-- [x] Clipboard operations (read, write, check)
-- [x] Multi-step task engine with prompt parser
+- [x] Core Graphics input simulation (click, type, key)
+- [x] Window management (move, resize, geometry)
+- [x] Window-specific screenshots (no cropping)
+- [x] Security layer (allow-list, blocked keys, confirmations)
 
 ### Planned 📋
-- [ ] Push to GitHub as public repository
-- [ ] Notification center integration
-- [ ] Volume/brightness control
-- [ ] Multi-monitor window management
-- [ ] Drag and drop simulation
+- [ ] **Folder Watcher** — Detect new files in Downloads, auto-organize by project
+- [ ] **System State** — Battery, WiFi, disk space checks before long automations
+- [ ] **Window Layout Presets** — Save/restore multi-app workspaces
+- [ ] **Calendar Integration** — Meeting-aware automation scheduling
+
+---
+
+## Security Model
+
+### Design Principles
+
+1. **No Shell Access** — All operations use native macOS APIs
+2. **Explicit Allow-List** — Only pre-approved apps can be controlled
+3. **Human-in-the-Loop** — Invasive actions require user confirmation
+4. **Input Validation** — Text length limits, key combo blocking
+
+### What's Blocked
+
+| Threat | Mitigation |
+|--------|------------|
+| Unauthorized app control | Application allow-list |
+| Destructive key combos | Blocked combinations list |
+| Excessive text input | Maximum string length (500) |
+| Unconfirmed actions | Confirmation prompts |
 
 ---
 
@@ -351,14 +262,6 @@ macos-sys-assist/
 1. Find the app's bundle ID: `osascript -e 'id of app "AppName"'`
 2. Add it to `allowed_apps.json`
 3. Restart the server
-
-### MCP tools not appearing in OpenCode UI
-
-**Known OpenCode bug.** The server loads correctly but tools don't appear in the UI. Use the bash fallback method:
-
-```bash
-.venv/bin/python3 -c "import sys; sys.path.insert(0, '.'); from macos.accessibility import AccessibilityWrapper; print(AccessibilityWrapper().get_frontmost_app())"
-```
 
 ---
 

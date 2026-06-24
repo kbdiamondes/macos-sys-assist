@@ -32,10 +32,7 @@ from mcp.types import (
 from config import load_config, ServerConfig
 from security import SecurityValidator
 from tools.information import (
-    get_active_app,
-    list_open_apps,
     get_window_geometry,
-    get_screen_resolution,
 )
 from tools.actions import (
     move_window,
@@ -44,22 +41,11 @@ from tools.actions import (
     type_string,
     press_key,
 )
-from tools.filesystem import (
-    find_files,
-    read_file,
-    open_file,
-    list_directory,
-)
 from tools.screenshot import (
     screenshot,
     screenshot_window,
     screenshot_region,
     get_displays,
-)
-from tools.clipboard import (
-    get_clipboard,
-    set_clipboard,
-    clipboard_has_text,
 )
 
 # Configure logging
@@ -74,24 +60,6 @@ logger = logging.getLogger("macos-sys-assist")
 TOOLS = [
     # Information tools (read-only)
     Tool(
-        name="get_active_app",
-        description="Get the currently focused application. Returns bundle_id, name, pid, and whether it's in the allow-list.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    ),
-    Tool(
-        name="list_open_apps",
-        description="List all running applications with visible windows. Shows which apps are allowed.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    ),
-    Tool(
         name="get_window_geometry",
         description="Get the position and size of the active window for a specific application.",
         inputSchema={
@@ -103,15 +71,6 @@ TOOLS = [
                 }
             },
             "required": ["pid"]
-        }
-    ),
-    Tool(
-        name="get_screen_resolution",
-        description="Get the primary screen resolution in pixels.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
         }
     ),
     # Action tools (write operations - require confirmation)
@@ -206,75 +165,6 @@ TOOLS = [
             "required": ["key_combination"]
         }
     ),
-    # File system tools
-    Tool(
-        name="find_files",
-        description="Find files matching a pattern in a directory. Returns file names, paths, and sizes.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "directory": {
-                    "type": "string",
-                    "description": "Directory to search in (default: ~/Downloads)"
-                },
-                "pattern": {
-                    "type": "string",
-                    "description": "Glob pattern to match (e.g., '*.md', 'Readme*')"
-                },
-                "recursive": {
-                    "type": "boolean",
-                    "description": "Search subdirectories recursively"
-                }
-            },
-            "required": []
-        }
-    ),
-    Tool(
-        name="read_file",
-        description="Read text file contents. Returns file content with metadata. Max 1MB file size.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "filepath": {
-                    "type": "string",
-                    "description": "Path to the file to read"
-                },
-                "max_lines": {
-                    "type": "integer",
-                    "description": "Maximum lines to read (default: 100)"
-                }
-            },
-            "required": ["filepath"]
-        }
-    ),
-    Tool(
-        name="open_file",
-        description="Open a file with the default application. Requires user confirmation.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "filepath": {
-                    "type": "string",
-                    "description": "Path to the file to open"
-                }
-            },
-            "required": ["filepath"]
-        }
-    ),
-    Tool(
-        name="list_directory",
-        description="List contents of a directory. Returns files and folders with metadata.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "directory": {
-                    "type": "string",
-                    "description": "Directory to list (default: ~/Downloads)"
-                }
-            },
-            "required": []
-        }
-    ),
     # Screenshot tools
     Tool(
         name="screenshot",
@@ -348,47 +238,6 @@ TOOLS = [
     ),
     Tool(
         name="get_displays",
-        description="Get information about connected displays.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    ),
-    # Clipboard tools
-    Tool(
-        name="get_clipboard",
-        description="Get text from clipboard.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    ),
-    Tool(
-        name="set_clipboard",
-        description="Set clipboard text.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "text": {
-                    "type": "string",
-                    "description": "Text to copy to clipboard"
-                }
-            },
-            "required": ["text"]
-        }
-    ),
-    Tool(
-        name="clipboard_has_text",
-        description="Check if clipboard contains text.",
-        inputSchema={
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    ),
-]
 
 
 class MacOSAssistServer:
@@ -441,20 +290,11 @@ class MacOSAssistServer:
             Tool execution result.
         """
         # Information tools (read-only)
-        if name == "get_active_app":
-            return get_active_app(self.validator)
-
-        elif name == "list_open_apps":
-            return list_open_apps(self.validator)
-
-        elif name == "get_window_geometry":
+        if name == "get_window_geometry":
             pid = arguments.get("pid")
             if pid is None:
                 return {"error": "pid is required"}
             return get_window_geometry(self.validator, pid)
-
-        elif name == "get_screen_resolution":
-            return get_screen_resolution(self.validator)
 
         # Action tools (write operations)
         elif name == "move_window":
@@ -492,31 +332,8 @@ class MacOSAssistServer:
                 return {"error": "key_combination is required"}
             return press_key(self.validator, key_combination)
 
-        # File system tools
-        elif name == "find_files":
-            directory = arguments.get("directory", "~/Downloads")
-            pattern = arguments.get("pattern", "*")
-            recursive = arguments.get("recursive", False)
-            return find_files(self.validator, directory, pattern, recursive)
-
-        elif name == "read_file":
-            filepath = arguments.get("filepath")
-            if filepath is None:
-                return {"error": "filepath is required"}
-            max_lines = arguments.get("max_lines", 100)
-            return read_file(self.validator, filepath, max_lines)
-
-        elif name == "open_file":
-            filepath = arguments.get("filepath")
-            if filepath is None:
-                return {"error": "filepath is required"}
-            return open_file(self.validator, filepath)
-
-        elif name == "list_directory":
-            directory = arguments.get("directory", "~/Downloads")
-            return list_directory(self.validator, directory)
-
-        # Screenshot tools
+        # Action tools (write operations)
+        elif name == "move_window":
         elif name == "screenshot":
             filepath = arguments.get("filepath", "~/Pictures/screenshot.png")
             display_id = arguments.get("display_id", 0)
@@ -542,19 +359,6 @@ class MacOSAssistServer:
 
         elif name == "get_displays":
             return get_displays(self.validator)
-
-        # Clipboard tools
-        elif name == "get_clipboard":
-            return get_clipboard(self.validator)
-
-        elif name == "set_clipboard":
-            text = arguments.get("text")
-            if text is None:
-                return {"error": "text is required"}
-            return set_clipboard(self.validator, text)
-
-        elif name == "clipboard_has_text":
-            return clipboard_has_text(self.validator)
 
         else:
             return {"error": f"Unknown tool: {name}"}
