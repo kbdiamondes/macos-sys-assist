@@ -9,6 +9,7 @@ from .input import InputSimulator
 from .filesystem import FileSystemManager
 from .app_lifecycle import AppLifecycleManager
 from .screenshot import ScreenshotManager
+from .clipboard import ClipboardManager
 from .task_engine import TaskEngine, TaskStep, TaskResult, PromptParser
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "FileSystemManager",
     "AppLifecycleManager",
     "ScreenshotManager",
+    "ClipboardManager",
     "TaskEngine",
     "TaskStep",
     "TaskResult",

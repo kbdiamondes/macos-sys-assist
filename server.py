@@ -56,6 +56,11 @@ from tools.screenshot import (
     screenshot_region,
     get_displays,
 )
+from tools.clipboard import (
+    get_clipboard,
+    set_clipboard,
+    clipboard_has_text,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -350,6 +355,39 @@ TOOLS = [
             "required": []
         }
     ),
+    # Clipboard tools
+    Tool(
+        name="get_clipboard",
+        description="Get text from clipboard.",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
+    Tool(
+        name="set_clipboard",
+        description="Set clipboard text.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "Text to copy to clipboard"
+                }
+            },
+            "required": ["text"]
+        }
+    ),
+    Tool(
+        name="clipboard_has_text",
+        description="Check if clipboard contains text.",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
 ]
 
 
@@ -504,6 +542,19 @@ class MacOSAssistServer:
 
         elif name == "get_displays":
             return get_displays(self.validator)
+
+        # Clipboard tools
+        elif name == "get_clipboard":
+            return get_clipboard(self.validator)
+
+        elif name == "set_clipboard":
+            text = arguments.get("text")
+            if text is None:
+                return {"error": "text is required"}
+            return set_clipboard(self.validator, text)
+
+        elif name == "clipboard_has_text":
+            return clipboard_has_text(self.validator)
 
         else:
             return {"error": f"Unknown tool: {name}"}

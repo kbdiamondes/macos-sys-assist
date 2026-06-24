@@ -27,6 +27,11 @@ from .screenshot import (
     screenshot_region,
     get_displays,
 )
+from .clipboard import (
+    get_clipboard,
+    set_clipboard,
+    clipboard_has_text,
+)
 
 __all__ = [
     # Information tools
@@ -50,4 +55,8 @@ __all__ = [
     "screenshot_window",
     "screenshot_region",
     "get_displays",
+    # Clipboard tools
+    "get_clipboard",
+    "set_clipboard",
+    "clipboard_has_text",
 ]
