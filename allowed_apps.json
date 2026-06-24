@@ -1,6 +1,11 @@
 {
     "allowed_apps": [
         {
+            "bundle_id": "ai.opencode.desktop",
+            "name": "OpenCode",
+            "allow_actions": true
+        },
+        {
             "bundle_id": "com.apple.Safari",
             "name": "Safari",
             "allow_actions": true
@@ -8,6 +13,11 @@
         {
             "bundle_id": "com.google.Chrome",
             "name": "Google Chrome",
+            "allow_actions": true
+        },
+        {
+            "bundle_id": "com.brave.Browser",
+            "name": "Brave Browser",
             "allow_actions": true
         },
         {
