@@ -38,11 +38,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- File system operations (find, read, open files)
-- Screenshot capability
-- Clipboard operations (get/set)
-- App lifecycle management (launch, quit, focus)
 - Multi-monitor support
-- Multi-step task engine
 - Notification center integration
 - Volume/brightness control
+- Drag and drop simulation
+- Window snapping presets (thirds, quarters)
+
+---
+
+## [1.1.0] - 2026-06-24
+
+### Added
+
+- **File System Operations**: `find_files`, `read_file`, `open_file`, `list_directory`
+- **App Lifecycle Management**: `launch_app`, `quit_app`, `focus_app`, `get_app_info`
+- **Screenshot Capability**: `screenshot`, `screenshot_window`, `screenshot_region`, `get_displays`
+- **Clipboard Operations**: `get_clipboard`, `set_clipboard`, `clipboard_has_text`
+- **Multi-Step Task Engine**: `TaskEngine` with dependency resolution and result chaining
+- **Prompt Parser**: Natural language prompt → task steps decomposition
+- **Case-Insensitive File Search**: Automatic fallback for case-mismatched searches
+- **Wrapper Script**: `run.sh` for proper directory context
+
+### Changed
+
+- Updated server.py with 10 new MCP tool definitions
+- Updated tools/__init__.py with all new tool exports
+- Updated macos/__init__.py with all new module exports
+- Comprehensive README documentation for all features
+
+### Security
+
+- Restricted path access for file operations
+- File size limits (1MB max) for read operations
+- Permission checking for screenshot operations
