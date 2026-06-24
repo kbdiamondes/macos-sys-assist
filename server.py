@@ -284,7 +284,7 @@ TOOLS = [
             "properties": {
                 "filepath": {
                     "type": "string",
-                    "description": "Where to save the screenshot (default: /tmp/screenshot.png)"
+                    "description": "Where to save the screenshot (default: ~/Pictures/screenshot.png)"
                 },
                 "display_id": {
                     "type": "integer",
@@ -518,7 +518,7 @@ class MacOSAssistServer:
 
         # Screenshot tools
         elif name == "screenshot":
-            filepath = arguments.get("filepath", "/tmp/screenshot.png")
+            filepath = arguments.get("filepath", "~/Pictures/screenshot.png")
             display_id = arguments.get("display_id", 0)
             include_cursor = arguments.get("include_cursor", False)
             return screenshot(self.validator, filepath, display_id, include_cursor)

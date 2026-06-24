@@ -46,7 +46,7 @@ class ScreenshotManager:
 
     def screenshot(
         self,
-        filepath: str = "/tmp/screenshot.png",
+        filepath: str = "~/Pictures/screenshot.png",
         display_id: int = 0,
         include_cursor: bool = False,
         format: str = "png"

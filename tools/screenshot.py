@@ -10,7 +10,7 @@ from security import SecurityValidator
 
 def screenshot(
     validator: SecurityValidator,
-    filepath: str = "/tmp/screenshot.png",
+    filepath: str = "~/Pictures/screenshot.png",
     display_id: int = 0,
     include_cursor: bool = False
 ) -> Dict[str, Any]:
