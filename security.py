@@ -116,6 +116,87 @@ class SecurityValidator:
             "needs_confirmation": needs_confirmation
         }
 
+    def validate_action_for_pid(self, action_type: str, pid: int) -> Dict[str, Any]:
+        """
+        Validate that an action is allowed for a specific app identified by PID.
+        Unlike validate_action(), this does NOT check the frontmost app —
+        it looks up the app by PID and validates it against the allow-list.
+        
+        Args:
+            action_type: The type of action ("click", "type", "key", "window", "info").
+            pid: The process ID of the target application.
+        
+        Returns:
+            {
+                "valid": True/False,
+                "pid": int,
+                "app_name": str,
+                "error": str or None,
+                "needs_confirmation": bool
+            }
+        """
+        # Look up app by PID
+        app_info = self.accessibility.get_app_by_pid(pid)
+        
+        if app_info is None:
+            return {
+                "valid": False,
+                "pid": pid,
+                "app_name": "Unknown",
+                "error": f"No running application found with PID {pid}",
+                "needs_confirmation": False
+            }
+        
+        bundle_id = app_info.get("bundle_id", "")
+        app_name = app_info.get("name", "Unknown")
+        
+        # Check if app is in allow-list
+        if not self.config.is_app_allowed(bundle_id):
+            return {
+                "valid": False,
+                "pid": pid,
+                "app_name": app_name,
+                "error": (
+                    f"App '{app_name}' (bundle_id: {bundle_id}) is not in the "
+                    f"allowed applications list. Add it to allowed_apps.json to "
+                    f"grant access."
+                ),
+                "needs_confirmation": False
+            }
+        
+        # Check if actions are allowed for this app
+        app_config = self.config.get_app(bundle_id)
+        if action_type in ("click", "type", "key", "window") and not app_config.allow_actions:
+            return {
+                "valid": False,
+                "pid": pid,
+                "app_name": app_name,
+                "error": (
+                    f"Actions are not allowed for '{app_name}'. "
+                    f"Set allow_actions to true in allowed_apps.json."
+                ),
+                "needs_confirmation": False
+            }
+        
+        # Determine if confirmation is needed
+        needs_confirmation = False
+        settings = self.config.global_settings
+        
+        if action_type == "click" and settings.require_confirmation_for_click:
+            needs_confirmation = True
+        elif action_type == "type" and settings.require_confirmation_for_type:
+            needs_confirmation = True
+        elif action_type == "key" and settings.require_confirmation_for_key:
+            needs_confirmation = True
+        
+        return {
+            "valid": True,
+            "pid": pid,
+            "app_name": app_name,
+            "error": None,
+            "needs_confirmation": needs_confirmation
+        }
+
     def validate_text_input(self, text: str) -> Dict[str, Any]:
         """
         Validate text input against security constraints.

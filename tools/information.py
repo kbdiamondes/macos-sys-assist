@@ -74,11 +74,11 @@ def get_window_geometry(validator: SecurityValidator, pid: int) -> Dict[str, Any
     """
     from macos.window import WindowManager
     
-    validation = validator.validate_action("info")
+    # Validate against the specific PID, not the frontmost app
+    validation = validator.validate_action_for_pid("info", pid)
     if not validation["valid"]:
         return {"error": validation["error"]}
     
-    # Allow querying any app's geometry (read-only operation)
     window_manager = WindowManager()
     return window_manager.get_window_geometry(pid)
 

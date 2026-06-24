@@ -71,11 +71,9 @@ class AccessibilityWrapper:
         
         apps = []
         for app in running_apps:
-            # Only include apps that have a UI and are regular (non-background) apps
-            if (
-                app.activationPolicy() == AppServices.NSApplicationActivationPolicyRegular
-                and app.isActive()
-            ):
+            # Only include apps that have a regular UI (non-background agents)
+            # Removed isActive() check — it only returned the frontmost app
+            if app.activationPolicy() == AppServices.NSApplicationActivationPolicyRegular:
                 apps.append({
                     "bundle_id": app.bundleIdentifier() or "",
                     "name": app.localizedName() or "Unknown",
@@ -83,6 +81,23 @@ class AccessibilityWrapper:
                 })
         
         return apps
+
+    def get_app_by_pid(self, pid: int) -> Optional[Dict[str, str]]:
+        """
+        Look up a running app's bundle_id and name by its PID.
+        Returns: {"bundle_id": "...", "name": "...", "pid": "..."} or None if not found.
+        """
+        workspace = AppServices.NSWorkspace.sharedWorkspace()
+        
+        for app in workspace.runningApplications():
+            if app.processIdentifier() == pid:
+                return {
+                    "bundle_id": app.bundleIdentifier() or "",
+                    "name": app.localizedName() or "Unknown",
+                    "pid": str(pid),
+                }
+        
+        return None
 
     def get_all_running_apps(self) -> List[Dict[str, str]]:
         """
