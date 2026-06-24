@@ -50,6 +50,12 @@ from tools.filesystem import (
     open_file,
     list_directory,
 )
+from tools.screenshot import (
+    screenshot,
+    screenshot_window,
+    screenshot_region,
+    get_displays,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -264,6 +270,86 @@ TOOLS = [
             "required": []
         }
     ),
+    # Screenshot tools
+    Tool(
+        name="screenshot",
+        description="Capture full screen. Requires Screen Recording permission.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "filepath": {
+                    "type": "string",
+                    "description": "Where to save the screenshot (default: /tmp/screenshot.png)"
+                },
+                "display_id": {
+                    "type": "integer",
+                    "description": "Display to capture (0 = main, 1 = second, etc.)"
+                },
+                "include_cursor": {
+                    "type": "boolean",
+                    "description": "Include mouse cursor in capture"
+                }
+            },
+            "required": []
+        }
+    ),
+    Tool(
+        name="screenshot_window",
+        description="Capture a specific window by PID. Requires Screen Recording permission.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "pid": {
+                    "type": "integer",
+                    "description": "Process ID of the target window"
+                },
+                "filepath": {
+                    "type": "string",
+                    "description": "Where to save the screenshot"
+                }
+            },
+            "required": ["pid"]
+        }
+    ),
+    Tool(
+        name="screenshot_region",
+        description="Capture a specific screen region. Requires Screen Recording permission.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "integer",
+                    "description": "X coordinate of top-left corner"
+                },
+                "y": {
+                    "type": "integer",
+                    "description": "Y coordinate of top-left corner"
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "Width of region"
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "Height of region"
+                },
+                "filepath": {
+                    "type": "string",
+                    "description": "Where to save the screenshot"
+                }
+            },
+            "required": ["x", "y", "width", "height"]
+        }
+    ),
+    Tool(
+        name="get_displays",
+        description="Get information about connected displays.",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
 ]
 
 
@@ -391,6 +477,33 @@ class MacOSAssistServer:
         elif name == "list_directory":
             directory = arguments.get("directory", "~/Downloads")
             return list_directory(self.validator, directory)
+
+        # Screenshot tools
+        elif name == "screenshot":
+            filepath = arguments.get("filepath", "/tmp/screenshot.png")
+            display_id = arguments.get("display_id", 0)
+            include_cursor = arguments.get("include_cursor", False)
+            return screenshot(self.validator, filepath, display_id, include_cursor)
+
+        elif name == "screenshot_window":
+            pid = arguments.get("pid")
+            if pid is None:
+                return {"error": "pid is required"}
+            filepath = arguments.get("filepath", "/tmp/window.png")
+            return screenshot_window(self.validator, pid, filepath)
+
+        elif name == "screenshot_region":
+            x = arguments.get("x")
+            y = arguments.get("y")
+            width = arguments.get("width")
+            height = arguments.get("height")
+            if None in (x, y, width, height):
+                return {"error": "x, y, width, and height are required"}
+            filepath = arguments.get("filepath", "/tmp/region.png")
+            return screenshot_region(self.validator, x, y, width, height, filepath)
+
+        elif name == "get_displays":
+            return get_displays(self.validator)
 
         else:
             return {"error": f"Unknown tool: {name}"}

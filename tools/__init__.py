@@ -21,6 +21,12 @@ from .filesystem import (
     open_file,
     list_directory,
 )
+from .screenshot import (
+    screenshot,
+    screenshot_window,
+    screenshot_region,
+    get_displays,
+)
 
 __all__ = [
     # Information tools
@@ -39,4 +45,9 @@ __all__ = [
     "read_file",
     "open_file",
     "list_directory",
+    # Screenshot tools
+    "screenshot",
+    "screenshot_window",
+    "screenshot_region",
+    "get_displays",
 ]
