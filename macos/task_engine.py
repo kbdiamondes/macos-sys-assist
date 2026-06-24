@@ -375,18 +375,62 @@ class PromptParser:
 
             return steps
 
-        # Check for "open X"
+        # Check for "open X in Y folder"
+        open_in_folder = re.search(
+            r"open (.+?) (?:in|from|on) (.+?) (?:folder|directory)?",
+            prompt_lower
+        )
+        if open_in_folder:
+            filename = open_in_folder.group(1).strip()
+            directory = cls._resolve_directory(open_in_folder.group(2).strip())
+
+            # Find the file first
+            steps.append(TaskStep(
+                action="find_files",
+                params={"directory": directory, "pattern": filename},
+                description=f"Find '{filename}' in {directory}"
+            ))
+
+            # Open the found file
+            steps.append(TaskStep(
+                action="open_file",
+                params={"filepath": None},
+                description="Open the found file",
+                depends_on=0,
+                extract_from="files[0].path"
+            ))
+
+            return steps
+
+        # Check for "open X" (simple case)
         open_match = re.search(r"(?:open|launch) (.+)", prompt_lower)
         if open_match:
             target = open_match.group(1).strip()
 
-            # Check if it's a file path
+            # Check if it's a file path (contains / or .)
             if '/' in target or '.' in target:
-                steps.append(TaskStep(
-                    action="open_file",
-                    params={"filepath": target},
-                    description=f"Open {target}"
-                ))
+                # Check if it looks like a filename (has extension)
+                if '.' in target and not target.startswith('.'):
+                    # Try to find it in Downloads first
+                    steps.append(TaskStep(
+                        action="find_files",
+                        params={"directory": "~/Downloads", "pattern": target},
+                        description=f"Find '{target}' in Downloads"
+                    ))
+
+                    steps.append(TaskStep(
+                        action="open_file",
+                        params={"filepath": None},
+                        description="Open the found file",
+                        depends_on=0,
+                        extract_from="files[0].path"
+                    ))
+                else:
+                    steps.append(TaskStep(
+                        action="open_file",
+                        params={"filepath": target},
+                        description=f"Open {target}"
+                    ))
             else:
                 # Assume it's an app name
                 steps.append(TaskStep(
