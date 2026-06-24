@@ -15,6 +15,12 @@ from .actions import (
     type_string,
     press_key,
 )
+from .filesystem import (
+    find_files,
+    read_file,
+    open_file,
+    list_directory,
+)
 
 __all__ = [
     # Information tools
@@ -28,4 +34,9 @@ __all__ = [
     "click_at",
     "type_string",
     "press_key",
+    # File system tools
+    "find_files",
+    "read_file",
+    "open_file",
+    "list_directory",
 ]

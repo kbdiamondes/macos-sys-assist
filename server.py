@@ -44,6 +44,12 @@ from tools.actions import (
     type_string,
     press_key,
 )
+from tools.filesystem import (
+    find_files,
+    read_file,
+    open_file,
+    list_directory,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -189,6 +195,75 @@ TOOLS = [
             "required": ["key_combination"]
         }
     ),
+    # File system tools
+    Tool(
+        name="find_files",
+        description="Find files matching a pattern in a directory. Returns file names, paths, and sizes.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": "Directory to search in (default: ~/Downloads)"
+                },
+                "pattern": {
+                    "type": "string",
+                    "description": "Glob pattern to match (e.g., '*.md', 'Readme*')"
+                },
+                "recursive": {
+                    "type": "boolean",
+                    "description": "Search subdirectories recursively"
+                }
+            },
+            "required": []
+        }
+    ),
+    Tool(
+        name="read_file",
+        description="Read text file contents. Returns file content with metadata. Max 1MB file size.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "filepath": {
+                    "type": "string",
+                    "description": "Path to the file to read"
+                },
+                "max_lines": {
+                    "type": "integer",
+                    "description": "Maximum lines to read (default: 100)"
+                }
+            },
+            "required": ["filepath"]
+        }
+    ),
+    Tool(
+        name="open_file",
+        description="Open a file with the default application. Requires user confirmation.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "filepath": {
+                    "type": "string",
+                    "description": "Path to the file to open"
+                }
+            },
+            "required": ["filepath"]
+        }
+    ),
+    Tool(
+        name="list_directory",
+        description="List contents of a directory. Returns files and folders with metadata.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": "Directory to list (default: ~/Downloads)"
+                }
+            },
+            "required": []
+        }
+    ),
 ]
 
 
@@ -292,6 +367,30 @@ class MacOSAssistServer:
             if key_combination is None:
                 return {"error": "key_combination is required"}
             return press_key(self.validator, key_combination)
+
+        # File system tools
+        elif name == "find_files":
+            directory = arguments.get("directory", "~/Downloads")
+            pattern = arguments.get("pattern", "*")
+            recursive = arguments.get("recursive", False)
+            return find_files(self.validator, directory, pattern, recursive)
+
+        elif name == "read_file":
+            filepath = arguments.get("filepath")
+            if filepath is None:
+                return {"error": "filepath is required"}
+            max_lines = arguments.get("max_lines", 100)
+            return read_file(self.validator, filepath, max_lines)
+
+        elif name == "open_file":
+            filepath = arguments.get("filepath")
+            if filepath is None:
+                return {"error": "filepath is required"}
+            return open_file(self.validator, filepath)
+
+        elif name == "list_directory":
+            directory = arguments.get("directory", "~/Downloads")
+            return list_directory(self.validator, directory)
 
         else:
             return {"error": f"Unknown tool: {name}"}
