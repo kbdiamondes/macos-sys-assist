@@ -1,0 +1,40 @@
+{
+    "allowed_apps": [
+        {
+            "bundle_id": "com.apple.Safari",
+            "name": "Safari",
+            "allow_actions": true
+        },
+        {
+            "bundle_id": "com.google.Chrome",
+            "name": "Google Chrome",
+            "allow_actions": true
+        },
+        {
+            "bundle_id": "com.microsoft.VSCode",
+            "name": "Visual Studio Code",
+            "allow_actions": true
+        },
+        {
+            "bundle_id": "com.apple.mail",
+            "name": "Mail",
+            "allow_actions": true
+        },
+        {
+            "bundle_id": "com.apple.TextEdit",
+            "name": "TextEdit",
+            "allow_actions": true
+        }
+    ],
+    "global_settings": {
+        "require_confirmation_for_click": true,
+        "require_confirmation_for_type": true,
+        "require_confirmation_for_key": false,
+        "max_string_length": 500,
+        "blocked_key_combinations": [
+            "cmd+q",
+            "cmd+delete",
+            "ctrl+alt+delete"
+        ]
+    }
+}
