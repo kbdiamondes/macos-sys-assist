@@ -238,7 +238,14 @@ TOOLS = [
     ),
     Tool(
         name="get_displays",
-
+        description="Get all connected displays and their resolutions. No parameters required.",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
+]
 
 class MacOSAssistServer:
     """
@@ -332,8 +339,6 @@ class MacOSAssistServer:
                 return {"error": "key_combination is required"}
             return press_key(self.validator, key_combination)
 
-        # Action tools (write operations)
-        elif name == "move_window":
         elif name == "screenshot":
             filepath = arguments.get("filepath", "~/Pictures/screenshot.png")
             display_id = arguments.get("display_id", 0)
